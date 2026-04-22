@@ -6,7 +6,6 @@ from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, 
 from pyrogram import filters, Client, errors, enums
 from pyrogram.errors import UserNotParticipant
 from pyrogram.errors.exceptions.flood_420 import FloodWait
-# Database se naye functions import kiye hain
 from database import add_user, add_group, all_users, all_groups, users, remove_user, add_admin, remove_admin, get_admins
 from configs import cfg
 import random, asyncio
@@ -64,29 +63,50 @@ async def op(_, m :Message):
     await m.reply_photo("https://graph.org/file/13f3bca546143a5535694-2d01ef366f59bba613.jpg", caption="**<blockquote>👋 Hello {}!\nI'm an auto approve [Admin Join Requests]({}) Bot.\nI can approve users in Groups/Channels.Add me to your chat and Make me to admin with add members permission.<blockquote>\n\n__Powered By : @TP_02_Bots __**".format(m.from_user.mention, "https://t.me/telegram/153"), reply_markup=keyboard)
     
 
-#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Admin Management ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ User Info & Admin ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.on_message(filters.command("id"))
+async def get_id(_, m: Message):
+    # Updated ID logic to check for replies
+    if m.reply_to_message:
+        target = m.reply_to_message.from_user
+    else:
+        target = m.from_user
+        
+    if target:
+        await m.reply_text(
+            f"**User Info**\n"
+            f"**Name:** {target.mention}\n"
+            f"**User ID:** `{target.id}`"
+        )
 
 @app.on_message(filters.command("addadmin") & filters.user(cfg.SUDO))
 async def add_admin_cmd(_, m: Message):
     if len(m.command) < 2:
-        return await m.reply_text("Sahi format: `/addadmin [User_ID]`")
-    user_id = int(m.command[1])
-    add_admin(user_id)
-    await m.reply_text(f"✅ User `{user_id}` ko Admin bana diya gaya hai.")
+        return await m.reply_text("Correct format: `/addadmin [User_ID]`")
+    try:
+        user_id = int(m.command[1])
+        add_admin(user_id)
+        await m.reply_text(f"✅ User `{user_id}` has been added as Admin.")
+    except ValueError:
+        await m.reply_text("Please provide a valid numeric User ID.")
 
 @app.on_message(filters.command("removeadmin") & filters.user(cfg.SUDO))
 async def remove_admin_cmd(_, m: Message):
     if len(m.command) < 2:
-        return await m.reply_text("Sahi format: `/removeadmin [User_ID]`")
-    user_id = int(m.command[1])
-    remove_admin(user_id)
-    await m.reply_text(f"❌ User `{user_id}` ko Admin list se hata diya gaya hai.")
+        return await m.reply_text("Correct format: `/removeadmin [User_ID]`")
+    try:
+        user_id = int(m.command[1])
+        remove_admin(user_id)
+        await m.reply_text(f"❌ User `{user_id}` has been removed from Admin list.")
+    except ValueError:
+        await m.reply_text("Please provide a valid numeric User ID.")
 
 @app.on_message(filters.command("viewadmin") & filters.user(cfg.SUDO))
 async def view_admin_cmd(_, m: Message):
     admins = get_admins()
     if not admins:
-        return await m.reply_text("Abhi koi Admin nahi hai.")
+        return await m.reply_text("No Admins found in database.")
     msg = "**📋 Bot Admins List:**\n\n"
     for admin in admins:
         msg += f"• `{admin}`\n"
@@ -188,3 +208,4 @@ async def fcast(_, m : Message):
 
 print("I'm Alive Now!")
 app.run()
+    
