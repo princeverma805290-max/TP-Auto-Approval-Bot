@@ -6,7 +6,8 @@ from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, 
 from pyrogram import filters, Client, errors, enums
 from pyrogram.errors import UserNotParticipant
 from pyrogram.errors.exceptions.flood_420 import FloodWait
-from database import add_user, add_group, all_users, all_groups, users, remove_user
+# Database se naye functions import kiye hain
+from database import add_user, add_group, all_users, all_groups, users, remove_user, add_admin, remove_admin, get_admins
 from configs import cfg
 import random, asyncio
 
@@ -63,6 +64,34 @@ async def op(_, m :Message):
     await m.reply_photo("https://graph.org/file/13f3bca546143a5535694-2d01ef366f59bba613.jpg", caption="**<blockquote>👋 Hello {}!\nI'm an auto approve [Admin Join Requests]({}) Bot.\nI can approve users in Groups/Channels.Add me to your chat and Make me to admin with add members permission.<blockquote>\n\n__Powered By : @TP_02_Bots __**".format(m.from_user.mention, "https://t.me/telegram/153"), reply_markup=keyboard)
     
 
+#━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Admin Management ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.on_message(filters.command("addadmin") & filters.user(cfg.SUDO))
+async def add_admin_cmd(_, m: Message):
+    if len(m.command) < 2:
+        return await m.reply_text("Sahi format: `/addadmin [User_ID]`")
+    user_id = int(m.command[1])
+    add_admin(user_id)
+    await m.reply_text(f"✅ User `{user_id}` ko Admin bana diya gaya hai.")
+
+@app.on_message(filters.command("removeadmin") & filters.user(cfg.SUDO))
+async def remove_admin_cmd(_, m: Message):
+    if len(m.command) < 2:
+        return await m.reply_text("Sahi format: `/removeadmin [User_ID]`")
+    user_id = int(m.command[1])
+    remove_admin(user_id)
+    await m.reply_text(f"❌ User `{user_id}` ko Admin list se hata diya gaya hai.")
+
+@app.on_message(filters.command("viewadmin") & filters.user(cfg.SUDO))
+async def view_admin_cmd(_, m: Message):
+    admins = get_admins()
+    if not admins:
+        return await m.reply_text("Abhi koi Admin nahi hai.")
+    msg = "**📋 Bot Admins List:**\n\n"
+    for admin in admins:
+        msg += f"• `{admin}`\n"
+    await m.reply_text(msg)
+
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ callback ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @app.on_callback_query(filters.regex("chk"))
@@ -78,8 +107,8 @@ async def chk(_, cb : CallbackQuery):
             InlineKeyboardButton("💬 Support", url="tg://openmessage?user_id=6380121809")
         ]]
     )
-    add_user(m.from_user.id)
-    await cb.edit_text(text="**👋 Hello {}!\nI'm an auto approve [Admin Join Requests]({}) Bot.\nI can approve users in Groups/Channels.Add me to your chat and promote me to admin with add members permission.\n\n__Powered By : @TP_02_Bots __**".format(cb.from_user.mention, "https://t.me/telegram/153"), reply_markup=keyboard)
+    add_user(cb.from_user.id)
+    await cb.edit_message_text(text="**👋 Hello {}!\nI'm an auto approve [Admin Join Requests]({}) Bot.\nI can approve users in Groups/Channels.Add me to your chat and promote me to admin with add members permission.\n\n__Powered By : @TP_02_Bots __**".format(cb.from_user.mention, "https://t.me/telegram/153"), reply_markup=keyboard)
     
 
 #━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ info ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -108,7 +137,6 @@ async def bcast(_, m : Message):
     for usrs in allusers.find():
         try:
             userid = usrs["user_id"]
-            #print(int(userid))
             if m.command[0] == "bcast":
                 await m.reply_to_message.copy(int(userid))
             success +=1
@@ -140,7 +168,6 @@ async def fcast(_, m : Message):
     for usrs in allusers.find():
         try:
             userid = usrs["user_id"]
-            #print(int(userid))
             if m.command[0] == "fcast":
                 await m.reply_to_message.forward(int(userid))
             success +=1
